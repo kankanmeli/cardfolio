@@ -1,66 +1,80 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import Navbar from '@/components/Navbar';
+
+export default function HomePage() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
+  }, []);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <Navbar user={user} />
+
+      <section className="hero">
+        <h1>Showcase Your Cards</h1>
+        <p>
+          Build a beautiful portfolio of your credit cards. Track fees, rewards, and share your collection with the world.
+        </p>
+        <div className="hero-actions">
+          {user ? (
+            <a href="/dashboard" className="btn btn-primary btn-lg">Go to Dashboard</a>
+          ) : (
+            <a href="/login" className="btn btn-primary btn-lg">
+              Get Started Free
+            </a>
+          )}
+          <a href="/explore" className="btn btn-secondary btn-lg">Explore Portfolios</a>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section id="features" className="container">
+        <div className="privacy-banner">
+          <span>🔒</span>
+          <span>We never store sensitive card details — no card numbers, CVVs, or expiry dates. Your data is safe.</span>
         </div>
-      </main>
-    </div>
+
+        <div className="features-grid">
+          <div className="glass-card feature-card">
+            <div className="feature-icon">💳</div>
+            <h3>Card Portfolio</h3>
+            <p>Add your credit cards with details like fees, cashback, reward points, and holding duration.</p>
+          </div>
+          <div className="glass-card feature-card">
+            <div className="feature-icon">🔗</div>
+            <h3>Shareable Profile</h3>
+            <p>Get a unique profile link to share your card collection publicly with anyone.</p>
+          </div>
+          <div className="glass-card feature-card">
+            <div className="feature-icon">📊</div>
+            <h3>Portfolio Stats</h3>
+            <p>See a beautiful summary of your total cards, LTF/FYF breakdown, total cashback & rewards.</p>
+          </div>
+          <div className="glass-card feature-card">
+            <div className="feature-icon">🎨</div>
+            <h3>Elegant Design</h3>
+            <p>A stunning, modern interface with card images, animations, and a premium dark theme.</p>
+          </div>
+          <div className="glass-card feature-card">
+            <div className="feature-icon">🔐</div>
+            <h3>Secure & Private</h3>
+            <p>Sign in with Google. Your email is never shown to others. No sensitive card data stored.</p>
+          </div>
+          <div className="glass-card feature-card">
+            <div className="feature-icon">📱</div>
+            <h3>Fully Responsive</h3>
+            <p>Looks amazing on desktop, tablet, and mobile devices.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer className="footer">
+        <p>CardFolio — No sensitive card details are stored on this platform.</p>
+      </footer>
+    </>
   );
 }
