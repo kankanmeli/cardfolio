@@ -31,6 +31,12 @@ export default function Navbar({ user }) {
                     <Link href="/explore" className="btn btn-ghost btn-sm">
                         🔍 Explore
                     </Link>
+                    <Link href="/leaderboard" className="btn btn-ghost btn-sm">
+                        🏆 Ranks
+                    </Link>
+                    <Link href="/battle" className="btn btn-ghost btn-sm">
+                        ⚔️ Battle
+                    </Link>
                     {user && profile ? (
                         <>
                             {profile.role === 'admin' && (

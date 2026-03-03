@@ -20,7 +20,7 @@ export default function AdminPage() {
     const [masterCards, setMasterCards] = useState([]);
     const [showCardModal, setShowCardModal] = useState(false);
     const [editingMasterCard, setEditingMasterCard] = useState(null);
-    const [cardForm, setCardForm] = useState({ bank_id: '', card_name: '', image_url: '' });
+    const [cardForm, setCardForm] = useState({ bank_id: '', card_name: '', image_url: '', default_joining_fee: '', default_annual_fee: '', tier: 'entry', category: 'Rewards' });
     const [cardImageFile, setCardImageFile] = useState(null);
     const [savingCard, setSavingCard] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
@@ -150,6 +150,8 @@ export default function AdminPage() {
             bank_id: cardForm.bank_id,
             card_name: cardForm.card_name,
             image_url: cardForm.image_url,
+            default_joining_fee: cardForm.default_joining_fee || null,
+            default_annual_fee: cardForm.default_annual_fee || null,
         });
 
         if (validationError) {
@@ -172,6 +174,10 @@ export default function AdminPage() {
                         bank_id: validData.bank_id,
                         card_name: validData.card_name.trim(),
                         image_url: imageUrl,
+                        default_joining_fee: validData.default_joining_fee,
+                        default_annual_fee: validData.default_annual_fee,
+                        tier: cardForm.tier || 'entry',
+                        category: cardForm.category || 'Rewards',
                     })
                     .eq('id', editingMasterCard.id);
 
@@ -184,6 +190,10 @@ export default function AdminPage() {
                         bank_id: validData.bank_id,
                         card_name: validData.card_name.trim(),
                         image_url: imageUrl,
+                        default_joining_fee: validData.default_joining_fee,
+                        default_annual_fee: validData.default_annual_fee,
+                        tier: cardForm.tier || 'entry',
+                        category: cardForm.category || 'Rewards',
                     });
 
                 if (error) {
@@ -200,7 +210,7 @@ export default function AdminPage() {
 
             setShowCardModal(false);
             setEditingMasterCard(null);
-            setCardForm({ bank_id: '', card_name: '', image_url: '' });
+            setCardForm({ bank_id: '', card_name: '', image_url: '', default_joining_fee: '', default_annual_fee: '', tier: 'entry', category: 'Rewards' });
             setCardImageFile(null);
             await fetchMasterCards();
         } catch (err) {
@@ -264,9 +274,31 @@ export default function AdminPage() {
         setConfirmAction(null);
     };
 
+    const handleTogglePremium = async (userId, makePremium) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ is_premium: makePremium })
+            .eq('id', userId);
+
+        if (error) {
+            showToast('Failed to update premium status', 'error');
+        } else {
+            showToast(makePremium ? 'User upgraded to Premium ⭐' : 'Premium removed');
+            await fetchUsers();
+        }
+    };
+
     const handleDeleteUser = async (userId) => {
         const { error: validationError } = validate(moderationSchema, { userId });
         if (validationError) { showToast(validationError, 'error'); return; }
+
+        // Ban-before-delete guard
+        const targetUser = users.find(u => u.id === userId);
+        if (targetUser && !targetUser.is_banned) {
+            showToast('Ban the user first before permanent deletion', 'error');
+            setConfirmAction(null);
+            return;
+        }
 
         const { error } = await supabase
             .from('profiles')
@@ -276,7 +308,7 @@ export default function AdminPage() {
         if (error) {
             showToast('Failed to delete user: ' + error.message, 'error');
         } else {
-            showToast('User deleted');
+            showToast('User deleted permanently');
             await fetchUsers();
         }
         setConfirmAction(null);
@@ -442,7 +474,7 @@ export default function AdminPage() {
                                 className="btn btn-primary"
                                 onClick={() => {
                                     setEditingMasterCard(null);
-                                    setCardForm({ bank_id: '', card_name: '', image_url: '' });
+                                    setCardForm({ bank_id: '', card_name: '', image_url: '', default_joining_fee: '', default_annual_fee: '', tier: 'entry' });
                                     setCardImageFile(null);
                                     setShowCardModal(true);
                                 }}
@@ -493,6 +525,10 @@ export default function AdminPage() {
                                                                 bank_id: card.bank_id,
                                                                 card_name: card.card_name,
                                                                 image_url: card.image_url || '',
+                                                                default_joining_fee: card.default_joining_fee || '',
+                                                                default_annual_fee: card.default_annual_fee || '',
+                                                                tier: card.tier || 'entry',
+                                                                category: card.category || 'Rewards',
                                                             });
                                                             setCardImageFile(null);
                                                             setShowCardModal(true);
@@ -598,6 +634,13 @@ export default function AdminPage() {
                                                             ✏️ Rename
                                                         </button>
                                                         <button
+                                                            className={`btn btn-sm ${u.is_premium ? 'btn-secondary' : 'btn-primary'}`}
+                                                            style={u.is_premium ? {} : { background: 'var(--accent-purple)' }}
+                                                            onClick={() => handleTogglePremium(u.id, !u.is_premium)}
+                                                        >
+                                                            {u.is_premium ? '⭐ Remove Premium' : '⭐ Make Premium'}
+                                                        </button>
+                                                        <button
                                                             className={`btn btn-sm ${u.is_banned ? 'btn-secondary' : 'btn-danger'}`}
                                                             onClick={() => setConfirmAction({
                                                                 type: u.is_banned ? 'unban' : 'ban',
@@ -692,6 +735,57 @@ export default function AdminPage() {
                                     setCardImageFile(null);
                                 }}
                             />
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Card Tier (for ranking)</label>
+                            <select
+                                className="input-field"
+                                value={cardForm.tier}
+                                onChange={(e) => setCardForm(prev => ({ ...prev, tier: e.target.value }))}
+                            >
+                                <option value="entry">Entry</option>
+                                <option value="mid">Mid-level</option>
+                                <option value="premium">Premium</option>
+                                <option value="super_premium">Super Premium</option>
+                            </select>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Card Category</label>
+                            <select
+                                className="input-field"
+                                value={cardForm.category}
+                                onChange={(e) => setCardForm(prev => ({ ...prev, category: e.target.value }))}
+                            >
+                                <option value="Rewards">Rewards</option>
+                                <option value="Cashback">Cashback</option>
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div className="input-group">
+                                <label className="input-label">Default Joining Fee (₹)</label>
+                                <input
+                                    type="number"
+                                    className="input-field"
+                                    placeholder="Optional"
+                                    min="0"
+                                    value={cardForm.default_joining_fee}
+                                    onChange={(e) => setCardForm(prev => ({ ...prev, default_joining_fee: e.target.value }))}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label className="input-label">Default Annual Fee (₹)</label>
+                                <input
+                                    type="number"
+                                    className="input-field"
+                                    placeholder="Optional"
+                                    min="0"
+                                    value={cardForm.default_annual_fee}
+                                    onChange={(e) => setCardForm(prev => ({ ...prev, default_annual_fee: e.target.value }))}
+                                />
+                            </div>
                         </div>
 
                         <div className="modal-actions">

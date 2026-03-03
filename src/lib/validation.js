@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const MAX_CARDS_FREE = 5;
+export const MAX_CARDS_PREMIUM = 50;
+export const MAX_PORTFOLIO_CARDS = MAX_CARDS_FREE; // default for backward compat
+
 // User card validation
 export const userCardSchema = z.object({
     master_card_id: z.string().min(1, 'Please select a card'),
@@ -18,11 +22,13 @@ export const createBankSchema = z.object({
     name: z.string().min(2, 'Bank name must be at least 2 characters').max(80),
 });
 
-// Admin: create card catalog entry
+// Admin: create card catalog entry (with optional default fees)
 export const createCardCatalogSchema = z.object({
     bank_id: z.string().min(1, 'Please select a bank'),
     card_name: z.string().min(2, 'Card name must be at least 2 characters').max(120),
     image_url: z.string().optional().default(''),
+    default_joining_fee: z.coerce.number().min(0).optional().nullable().default(null),
+    default_annual_fee: z.coerce.number().min(0).optional().nullable().default(null),
 });
 
 // Admin: rename user
@@ -40,6 +46,13 @@ export const moderationSchema = z.object({
 export const adminLoginSchema = z.object({
     email: z.string().email('Please enter a valid email'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+// Profile preferences
+export const profilePreferencesSchema = z.object({
+    is_profile_public: z.boolean(),
+    reddit_username: z.string().trim().nullable().optional(),
+    hide_name_on_profile: z.boolean(),
 });
 
 // Validate and return errors or parsed data

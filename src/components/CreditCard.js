@@ -1,13 +1,18 @@
 'use client';
 
+const inrFormatter = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+});
+
+function formatCurrency(val) {
+    return inrFormatter.format(val);
+}
+
 export default function CreditCard({ card, showActions, onEdit, onDelete }) {
     const cardName = `${card.bank_name} ${card.card_name}`;
     const typeBadgeClass = card.card_type === 'LTF' ? 'badge-ltf' : card.card_type === 'FYF' ? 'badge-fyf' : 'badge-paid';
-
-    const formatCurrency = (val) => {
-        if (val === null || val === undefined) return '₹0';
-        return `₹${Number(val).toLocaleString('en-IN')}`;
-    };
 
     const formatDate = (date) => {
         if (!date) return '—';
@@ -19,6 +24,7 @@ export default function CreditCard({ card, showActions, onEdit, onDelete }) {
         const start = new Date(since);
         const now = new Date();
         const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+        if (months < 0) return '0mo';
         if (months < 12) return `${months}mo`;
         const years = Math.floor(months / 12);
         const rem = months % 12;
@@ -52,11 +58,11 @@ export default function CreditCard({ card, showActions, onEdit, onDelete }) {
                 <div className="credit-card-details">
                     <div className="credit-card-detail">
                         <span className="credit-card-detail-label">Joining Fee</span>
-                        <span className="credit-card-detail-value">{formatCurrency(card.joining_fee)}</span>
+                        <span className="credit-card-detail-value">{formatCurrency(card.joining_fee || 0)}</span>
                     </div>
                     <div className="credit-card-detail">
                         <span className="credit-card-detail-label">Annual Fee</span>
-                        <span className="credit-card-detail-value">{formatCurrency(card.annual_fee)}</span>
+                        <span className="credit-card-detail-value">{formatCurrency(card.annual_fee || 0)}</span>
                     </div>
                     <div className="credit-card-detail">
                         <span className="credit-card-detail-label">Holding Since</span>
@@ -68,7 +74,7 @@ export default function CreditCard({ card, showActions, onEdit, onDelete }) {
                     </div>
                     <div className="credit-card-detail">
                         <span className="credit-card-detail-label">Cashback</span>
-                        <span className="credit-card-detail-value">{formatCurrency(card.cashback_earned)}</span>
+                        <span className="credit-card-detail-value">{formatCurrency(card.cashback_earned || 0)}</span>
                     </div>
                     <div className="credit-card-detail">
                         <span className="credit-card-detail-label">Reward Points</span>

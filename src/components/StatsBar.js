@@ -1,5 +1,15 @@
 'use client';
 
+const inrFormatter = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+});
+
+function formatCurrency(val) {
+    return inrFormatter.format(val);
+}
+
 export default function StatsBar({ cards }) {
     const totalCards = cards.length;
     const activeCards = cards.filter(c => c.is_active).length;
@@ -9,10 +19,9 @@ export default function StatsBar({ cards }) {
     const paidCards = cards.filter(c => c.card_type === 'Paid').length;
     const freeCards = ltfCards + fyfCards;
 
+    const totalAnnualFee = cards.reduce((sum, c) => sum + Number(c.annual_fee || 0), 0);
     const totalCashback = cards.reduce((sum, c) => sum + Number(c.cashback_earned || 0), 0);
     const totalRP = cards.reduce((sum, c) => sum + Number(c.reward_points_earned || 0), 0);
-
-    const formatCurrency = (val) => `₹${val.toLocaleString('en-IN')}`;
 
     return (
         <div className="stats-grid">
@@ -43,6 +52,10 @@ export default function StatsBar({ cards }) {
             <div className="stat-card">
                 <div className="stat-value">{paidCards}</div>
                 <div className="stat-label">Paid</div>
+            </div>
+            <div className="stat-card">
+                <div className="stat-value">{formatCurrency(totalAnnualFee)}</div>
+                <div className="stat-label">Total Annual Fee</div>
             </div>
             <div className="stat-card">
                 <div className="stat-value">{formatCurrency(totalCashback)}</div>
