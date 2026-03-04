@@ -474,7 +474,7 @@ export default function AdminPage() {
                                 className="btn btn-primary"
                                 onClick={() => {
                                     setEditingMasterCard(null);
-                                    setCardForm({ bank_id: '', card_name: '', image_url: '', default_joining_fee: '', default_annual_fee: '', tier: 'entry' });
+                                    setCardForm({ bank_id: '', card_name: '', image_url: '', default_joining_fee: '', default_annual_fee: '', tier: 'entry', category: 'Rewards' });
                                     setCardImageFile(null);
                                     setShowCardModal(true);
                                 }}
