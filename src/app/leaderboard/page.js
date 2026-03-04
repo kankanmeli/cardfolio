@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import RankBadge from '@/components/RankBadge';
 import AdBanner from '@/components/AdBanner';
+import { SkeletonTable } from '@/components/Skeleton';
 import { calculateProfilePoints, getRank } from '@/lib/points';
 import Link from 'next/link';
 
@@ -90,9 +91,13 @@ export default function LeaderboardPage() {
         return (
             <>
                 <Navbar user={user} />
-                <div className="loading-container" style={{ minHeight: '80vh' }}>
-                    <div className="spinner"></div>
-                    <p>Loading leaderboard...</p>
+                <div className="container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
+                    <div className="page-header" style={{ paddingTop: '16px' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🏆</div>
+                        <h1>Leaderboard</h1>
+                        <p>Top credit card portfolios ranked by profile points.</p>
+                    </div>
+                    <SkeletonTable rows={8} />
                 </div>
             </>
         );

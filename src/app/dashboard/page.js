@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import CreditCard from '@/components/CreditCard';
@@ -11,8 +11,10 @@ import DownloadSummary from '@/components/DownloadSummary';
 import RankBadge from '@/components/RankBadge';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import ExportPortfolio from '@/components/ExportPortfolio';
+import Confetti from '@/components/Confetti';
+import { SkeletonCard, SkeletonStats } from '@/components/Skeleton';
 import { MAX_CARDS_FREE, MAX_CARDS_PREMIUM } from '@/lib/validation';
-import { calculateProfilePoints } from '@/lib/points';
+import { calculateProfilePoints, getRank } from '@/lib/points';
 
 const SORT_OPTIONS = [
     { value: 'alpha', label: 'A → Z (Name)' },
@@ -22,6 +24,8 @@ const SORT_OPTIONS = [
     { value: 'holding', label: 'Holding Duration ↓' },
     { value: 'added', label: 'Recently Added' },
 ];
+
+const MILESTONES = [5, 10, 25, 50];
 
 export default function DashboardPage() {
     const [user, setUser] = useState(null);
@@ -33,17 +37,24 @@ export default function DashboardPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingCard, setEditingCard] = useState(null);
     const [toast, setToast] = useState(null);
-    const [confirmDelete, setConfirmDelete] = useState(null);
     const [copied, setCopied] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [sortBy, setSortBy] = useState('alpha');
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
+    const [viewMode, setViewMode] = useState('flat');
+    const [holderCounts, setHolderCounts] = useState({});
+
+    // Undo delete state
+    const [undoDelete, setUndoDelete] = useState(null);
+    const undoTimerRef = useRef(null);
 
     const isPremium = profile?.is_premium === true;
     const maxCards = isPremium ? MAX_CARDS_PREMIUM : MAX_CARDS_FREE;
 
     useEffect(() => {
         checkUser();
+        return () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current); };
     }, []);
 
     const checkUser = async () => {
@@ -67,9 +78,8 @@ export default function DashboardPage() {
         }
 
         setProfile(profileData);
-        await Promise.all([fetchCards(user.id), fetchBanks(), fetchMasterCards()]);
+        await Promise.all([fetchCards(user.id), fetchBanks(), fetchMasterCards(), fetchHolderCounts()]);
         setLoading(false);
-        // Check onboarding after mount (safe for SSR)
         if (typeof window !== 'undefined' && !localStorage.getItem('cardfolio_onboarded')) {
             setShowOnboarding(true);
         }
@@ -94,11 +104,11 @@ export default function DashboardPage() {
                 case 'holding': {
                     const dateA = a.holding_since ? new Date(a.holding_since).getTime() : Infinity;
                     const dateB = b.holding_since ? new Date(b.holding_since).getTime() : Infinity;
-                    return dateA - dateB; // oldest first = longest holding
+                    return dateA - dateB;
                 }
                 case 'added':
                     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                default: // alpha
+                default:
                     return `${a.bank_name} ${a.card_name}`.toLowerCase()
                         .localeCompare(`${b.bank_name} ${b.card_name}`.toLowerCase());
             }
@@ -111,9 +121,7 @@ export default function DashboardPage() {
     const profilePoints = useMemo(() => calculateProfilePoints(
         cards.map(c => ({ ...c, tier: c.master_cards?.tier || c.tier || 'entry' }))
     ), [cards]);
-    const [viewMode, setViewMode] = useState('flat'); // flat or bank
 
-    // Bank-grouped cards
     const bankGroups = useMemo(() => {
         const groups = {};
         sortedCards.forEach(c => {
@@ -149,19 +157,40 @@ export default function DashboardPage() {
         if (data) setMasterCards(data);
     };
 
-    const showToast = (message, type = 'success') => {
+    const fetchHolderCounts = async () => {
+        const { data } = await supabase
+            .from('user_cards')
+            .select('master_card_id');
+        if (data) {
+            const counts = {};
+            data.forEach(c => { counts[c.master_card_id] = (counts[c.master_card_id] || 0) + 1; });
+            setHolderCounts(counts);
+        }
+    };
+
+    const showToastMsg = (message, type = 'success') => {
         setToast({ message, type });
         setTimeout(() => setToast(null), 3000);
     };
 
+    const checkMilestone = useCallback((prevCount, newCount) => {
+        const hitMilestone = MILESTONES.some(m => prevCount < m && newCount >= m);
+        if (hitMilestone) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 100);
+        }
+    }, []);
+
     const handleAddCard = async (formData) => {
         if (cards.length >= maxCards) {
-            showToast(isPremium
+            showToastMsg(isPremium
                 ? `You've reached the limit of ${MAX_CARDS_PREMIUM} cards.`
                 : `Free tier allows ${MAX_CARDS_FREE} cards. Upgrade to Premium for up to ${MAX_CARDS_PREMIUM}!`,
                 'error');
             return;
         }
+
+        const prevCount = cards.length;
 
         const { data, error } = await supabase
             .from('user_cards')
@@ -181,15 +210,18 @@ export default function DashboardPage() {
             .single();
 
         if (error) {
-            if (error.code === '23505') showToast('You already have this card in your portfolio', 'error');
-            else showToast('Failed to add card: ' + error.message, 'error');
+            if (error.code === '23505') showToastMsg('You already have this card in your portfolio', 'error');
+            else showToastMsg('Failed to add card: ' + error.message, 'error');
             return;
         }
 
         const newCard = processCard(data);
         setCards(prev => [...prev, newCard]);
-        showToast('Card added successfully!');
+        showToastMsg('Card added successfully!');
         setShowModal(false);
+
+        // Milestone confetti
+        checkMilestone(prevCount, prevCount + 1);
     };
 
     const handleEditCard = async (formData) => {
@@ -210,19 +242,42 @@ export default function DashboardPage() {
             .select(`*, master_cards (bank_id, card_name, image_url, default_joining_fee, default_annual_fee, banks (name))`)
             .single();
 
-        if (error) { showToast('Failed to update card: ' + error.message, 'error'); return; }
+        if (error) { showToastMsg('Failed to update card: ' + error.message, 'error'); return; }
         setCards(prev => prev.map(c => c.id === editingCard.id ? processCard(data) : c));
-        showToast('Card updated successfully!');
+        showToastMsg('Card updated successfully!');
         setEditingCard(null);
         setShowModal(false);
     };
 
-    const handleDeleteCard = async (card) => {
+    // Undo delete: hide card immediately, delete after 10s, allow undo
+    const handleDeleteCard = (card) => {
+        // Cancel any pending delete
+        if (undoTimerRef.current) {
+            clearTimeout(undoTimerRef.current);
+        }
+
+        // Hide the card immediately
         setCards(prev => prev.filter(c => c.id !== card.id));
-        setConfirmDelete(null);
-        showToast('Card removed from portfolio');
-        const { error } = await supabase.from('user_cards').delete().eq('id', card.id);
-        if (error) { showToast('Failed to delete card: ' + error.message, 'error'); await fetchCards(user.id); }
+        setUndoDelete(card);
+
+        // Set timer to actually delete after 10s
+        undoTimerRef.current = setTimeout(async () => {
+            setUndoDelete(null);
+            const { error } = await supabase.from('user_cards').delete().eq('id', card.id);
+            if (error) {
+                showToastMsg('Failed to delete card: ' + error.message, 'error');
+                if (user) await fetchCards(user.id);
+            }
+        }, 10000);
+    };
+
+    const handleUndo = () => {
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+        if (undoDelete) {
+            setCards(prev => [...prev, undoDelete]);
+            showToastMsg('Card restored!');
+        }
+        setUndoDelete(null);
     };
 
     const copyProfileLink = () => {
@@ -237,9 +292,21 @@ export default function DashboardPage() {
         return (
             <>
                 <Navbar user={null} />
-                <div className="loading-container" style={{ minHeight: '80vh' }}>
-                    <div className="spinner"></div>
-                    <p>Loading your dashboard...</p>
+                <div className="container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                        <div>
+                            <div className="skeleton-shimmer skeleton-line" style={{ width: '200px', height: '28px', marginBottom: '8px' }} />
+                            <div className="skeleton-shimmer skeleton-line" style={{ width: '150px', height: '14px' }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <div className="skeleton-shimmer" style={{ width: '80px', height: '34px', borderRadius: 'var(--radius-sm)' }} />
+                            <div className="skeleton-shimmer" style={{ width: '100px', height: '34px', borderRadius: 'var(--radius-sm)' }} />
+                        </div>
+                    </div>
+                    <SkeletonStats />
+                    <div className="cards-grid" style={{ marginTop: '24px' }}>
+                        {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+                    </div>
                 </div>
             </>
         );
@@ -247,6 +314,7 @@ export default function DashboardPage() {
 
     return (
         <>
+            <Confetti active={showConfetti} />
             <Navbar user={user} />
             <div className="container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
                 {/* Header */}
@@ -325,7 +393,7 @@ export default function DashboardPage() {
                         onChange={(e) => {
                             const val = e.target.value;
                             if (val !== 'alpha' && !isPremium) {
-                                showToast('Custom sorting is a Premium feature ⭐', 'error');
+                                showToastMsg('Custom sorting is a Premium feature ⭐', 'error');
                                 return;
                             }
                             setSortBy(val);
@@ -357,7 +425,6 @@ export default function DashboardPage() {
 
                 {/* Cards */}
                 {viewMode === 'bank' ? (
-                    /* Bank-Grouped View */
                     bankGroups.length > 0 ? bankGroups.map(([bankName, bankCards]) => (
                         <section key={bankName} style={{ marginBottom: '32px' }}>
                             <h2 className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -367,38 +434,38 @@ export default function DashboardPage() {
                             <div className="cards-grid">
                                 {bankCards.map(card => (
                                     <CreditCard key={card.id} card={card} showActions={true}
+                                        holdersCount={holderCounts[card.master_card_id]}
                                         onEdit={(c) => { setEditingCard(c); setShowModal(true); }}
-                                        onDelete={(c) => setConfirmDelete(c)} />
+                                        onDelete={handleDeleteCard} />
                                 ))}
                             </div>
                         </section>
                     )) : null
                 ) : (
-                    /* Flat View */
                     <>
-                        {/* Active Cards */}
                         {activeCards.length > 0 && (
                             <section style={{ marginBottom: '40px' }}>
                                 <h2 className="section-heading">Active Cards <span className="section-heading-count">{activeCards.length}</span></h2>
                                 <div className="cards-grid">
                                     {activeCards.map(card => (
                                         <CreditCard key={card.id} card={card} showActions={true}
+                                            holdersCount={holderCounts[card.master_card_id]}
                                             onEdit={(c) => { setEditingCard(c); setShowModal(true); }}
-                                            onDelete={(c) => setConfirmDelete(c)} />
+                                            onDelete={handleDeleteCard} />
                                     ))}
                                 </div>
                             </section>
                         )}
 
-                        {/* Closed Cards */}
                         {closedCards.length > 0 && (
                             <section style={{ marginBottom: '40px' }}>
                                 <h2 className="section-heading">Closed Cards <span className="section-heading-count">{closedCards.length}</span></h2>
                                 <div className="cards-grid">
                                     {closedCards.map(card => (
                                         <CreditCard key={card.id} card={card} showActions={true}
+                                            holdersCount={holderCounts[card.master_card_id]}
                                             onEdit={(c) => { setEditingCard(c); setShowModal(true); }}
-                                            onDelete={(c) => setConfirmDelete(c)} />
+                                            onDelete={handleDeleteCard} />
                                     ))}
                                 </div>
                             </section>
@@ -428,16 +495,14 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {confirmDelete && (
-                <div className="confirm-overlay" onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null); }}>
-                    <div className="confirm-dialog">
-                        <h3>Remove Card?</h3>
-                        <p>Are you sure you want to remove {confirmDelete.bank_name} {confirmDelete.card_name} from your portfolio?</p>
-                        <div className="confirm-actions">
-                            <button className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
-                            <button className="btn btn-danger" onClick={() => handleDeleteCard(confirmDelete)}>Remove</button>
-                        </div>
-                    </div>
+            {/* Undo delete toast */}
+            {undoDelete && (
+                <div className="toast-undo">
+                    <span>🗑️ {undoDelete.bank_name} {undoDelete.card_name} removed</span>
+                    <button className="btn btn-primary btn-sm" onClick={handleUndo}>
+                        Undo
+                    </button>
+                    <div className="toast-undo-progress" />
                 </div>
             )}
 

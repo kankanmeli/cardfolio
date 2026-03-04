@@ -1,5 +1,6 @@
 import './globals.css';
 import Script from 'next/script';
+import ThemeProvider from '@/components/ThemeProvider';
 
 export const metadata = {
   title: 'CardFolio — Showcase Your Credit Card Collection',
@@ -11,7 +12,7 @@ export default function RootLayout({ children }) {
   const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {adsenseId && (
           <Script
@@ -23,8 +24,11 @@ export default function RootLayout({ children }) {
         )}
       </head>
       <body>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
 }
+

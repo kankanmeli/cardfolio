@@ -8,6 +8,8 @@ import CreditCard from '@/components/CreditCard';
 import StatsBar from '@/components/StatsBar';
 import AdBanner from '@/components/AdBanner';
 import RankBadge from '@/components/RankBadge';
+import CardStack from '@/components/CardStack';
+import { SkeletonCard, SkeletonStats } from '@/components/Skeleton';
 import { calculateProfilePoints } from '@/lib/points';
 
 export default function PortfolioPage() {
@@ -20,6 +22,7 @@ export default function PortfolioPage() {
     const [isPrivate, setIsPrivate] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [profileIsPremium, setProfileIsPremium] = useState(false);
+    const [holderCounts, setHolderCounts] = useState({});
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => setCurrentUser(data?.user || null));
@@ -94,6 +97,14 @@ export default function PortfolioPage() {
             setCards(sorted);
         }
 
+        // Fetch holder counts for popularity
+        const { data: allHolders } = await supabase.from('user_cards').select('master_card_id');
+        if (allHolders) {
+            const counts = {};
+            allHolders.forEach(c => { counts[c.master_card_id] = (counts[c.master_card_id] || 0) + 1; });
+            setHolderCounts(counts);
+        }
+
         setLoading(false);
     };
 
@@ -101,9 +112,18 @@ export default function PortfolioPage() {
         return (
             <>
                 <Navbar user={currentUser} />
-                <div className="loading-container" style={{ minHeight: '80vh' }}>
-                    <div className="spinner"></div>
-                    <p>Loading portfolio...</p>
+                <div className="container" style={{ paddingTop: '32px', paddingBottom: '48px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                        <div className="skeleton-shimmer" style={{ width: '60px', height: '60px', borderRadius: '50%' }} />
+                        <div>
+                            <div className="skeleton-shimmer skeleton-line" style={{ width: '180px', height: '24px', marginBottom: '6px' }} />
+                            <div className="skeleton-shimmer skeleton-line" style={{ width: '120px', height: '14px' }} />
+                        </div>
+                    </div>
+                    <SkeletonStats />
+                    <div className="cards-grid" style={{ marginTop: '24px' }}>
+                        {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+                    </div>
                 </div>
             </>
         );
@@ -190,6 +210,11 @@ export default function PortfolioPage() {
                     </div>
                 </div>
 
+                {/* Card Stack Visualization */}
+                {activeCards.length > 0 && (
+                    <CardStack cards={activeCards} maxCards={5} />
+                )}
+
                 {/* CTA for non-logged-in visitors */}
                 {!currentUser && (
                     <div className="glass-card" style={{
@@ -231,7 +256,8 @@ export default function PortfolioPage() {
                         </h2>
                         <div className="cards-grid">
                             {activeCards.map((card) => (
-                                <CreditCard key={card.id} card={card} showActions={false} />
+                                <CreditCard key={card.id} card={card} showActions={false}
+                                    holdersCount={holderCounts[card.master_card_id]} />
                             ))}
                         </div>
                     </section>
@@ -246,7 +272,8 @@ export default function PortfolioPage() {
                         </h2>
                         <div className="cards-grid">
                             {closedCards.map((card) => (
-                                <CreditCard key={card.id} card={card} showActions={false} />
+                                <CreditCard key={card.id} card={card} showActions={false}
+                                    holdersCount={holderCounts[card.master_card_id]} />
                             ))}
                         </div>
                     </section>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import { SkeletonProfile } from '@/components/Skeleton';
 import AdBanner from '@/components/AdBanner';
 import Link from 'next/link';
 
@@ -132,9 +133,8 @@ export default function ExplorePage() {
 
                 {/* Profile Grid */}
                 {loading ? (
-                    <div className="loading-container">
-                        <div className="spinner"></div>
-                        <p>Loading profiles...</p>
+                    <div className="cards-grid">
+                        {[1, 2, 3, 4, 5, 6].map(i => <SkeletonProfile key={i} />)}
                     </div>
                 ) : profiles.length === 0 ? (
                     <div className="empty-state">

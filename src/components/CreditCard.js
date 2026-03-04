@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
+
 const inrFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -10,9 +12,54 @@ function formatCurrency(val) {
     return inrFormatter.format(val);
 }
 
-export default function CreditCard({ card, showActions, onEdit, onDelete }) {
+function useDominantColor(imageUrl) {
+    const [color, setColor] = useState(null);
+
+    useEffect(() => {
+        if (!imageUrl) return;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = imageUrl;
+
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 50;
+                canvas.height = 30;
+                ctx.drawImage(img, 0, 0, 50, 30);
+                const data = ctx.getImageData(0, 0, 50, 30).data;
+
+                let r = 0, g = 0, b = 0, count = 0;
+                for (let i = 0; i < data.length; i += 16) {
+                    const pr = data[i], pg = data[i + 1], pb = data[i + 2], pa = data[i + 3];
+                    if (pa < 128) continue; // skip transparent
+                    // skip near-white and near-black pixels
+                    if (pr > 230 && pg > 230 && pb > 230) continue;
+                    if (pr < 25 && pg < 25 && pb < 25) continue;
+                    r += pr; g += pg; b += pb; count++;
+                }
+
+                if (count > 0) {
+                    r = Math.round(r / count);
+                    g = Math.round(g / count);
+                    b = Math.round(b / count);
+                    setColor(`rgb(${r}, ${g}, ${b})`);
+                }
+            } catch {
+                // CORS or canvas error — silently ignore
+            }
+        };
+    }, [imageUrl]);
+
+    return color;
+}
+
+export default function CreditCard({ card, showActions, onEdit, onDelete, holdersCount }) {
     const cardName = `${card.bank_name} ${card.card_name}`;
     const typeBadgeClass = card.card_type === 'LTF' ? 'badge-ltf' : card.card_type === 'FYF' ? 'badge-fyf' : 'badge-paid';
+    const dominantColor = useDominantColor(card.image_url);
 
     const formatDate = (date) => {
         if (!date) return '—';
@@ -31,8 +78,16 @@ export default function CreditCard({ card, showActions, onEdit, onDelete }) {
         return rem > 0 ? `${years}y ${rem}mo` : `${years}y`;
     };
 
+    const cardStyle = dominantColor ? {
+        borderColor: dominantColor,
+        boxShadow: `0 0 20px ${dominantColor}22, 0 0 40px ${dominantColor}11`,
+    } : {};
+
     return (
-        <div className={`credit-card ${!card.is_active ? 'inactive' : ''}`}>
+        <div
+            className={`credit-card ${!card.is_active ? 'inactive' : ''}`}
+            style={cardStyle}
+        >
             <div className="credit-card-image-wrapper">
                 {card.image_url ? (
                     <img src={card.image_url} alt={cardName} loading="lazy" />
@@ -50,10 +105,16 @@ export default function CreditCard({ card, showActions, onEdit, onDelete }) {
             </div>
 
             <div className="credit-card-body">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
                     <span className="credit-card-name" style={{ flex: 1 }}>{cardName}</span>
                     <span className={`badge ${typeBadgeClass}`}>{card.card_type}</span>
                 </div>
+
+                {holdersCount != null && holdersCount > 0 && (
+                    <div className="popularity-badge" style={{ marginBottom: '10px' }}>
+                        👥 Held by {holdersCount} user{holdersCount !== 1 ? 's' : ''}
+                    </div>
+                )}
 
                 <div className="credit-card-details">
                     <div className="credit-card-detail">

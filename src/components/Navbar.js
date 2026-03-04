@@ -3,9 +3,11 @@
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function Navbar({ user }) {
     const [profile, setProfile] = useState(null);
+    const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         if (user) {
@@ -37,6 +39,12 @@ export default function Navbar({ user }) {
                     <Link href="/battle" className="btn btn-ghost btn-sm">
                         ⚔️ Battle
                     </Link>
+                    <Link href="/catalog" className="btn btn-ghost btn-sm">
+                        📖 Catalog
+                    </Link>
+                    <button onClick={toggleTheme} className="theme-toggle" title="Toggle theme">
+                        {theme === 'dark' ? '☀️' : '🌙'}
+                    </button>
                     {user && profile ? (
                         <>
                             {profile.role === 'admin' && (

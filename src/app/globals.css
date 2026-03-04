@@ -1375,3 +1375,247 @@ select.input-field option {
   gap: 12px;
   justify-content: center;
 }
+
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+[data-theme="light"] {
+  --bg-primary: #f5f5fa;
+  --bg-secondary: #eeeef5;
+  --bg-tertiary: #e4e4f0;
+  --bg-card: rgba(0, 0, 0, 0.03);
+  --bg-card-hover: rgba(0, 0, 0, 0.06);
+  --bg-glass: rgba(0, 0, 0, 0.04);
+  --bg-glass-strong: rgba(0, 0, 0, 0.08);
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a60;
+  --text-muted: #7a7a90;
+  --text-accent: #6c4cff;
+
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --border-accent: rgba(168, 85, 247, 0.4);
+  --border-color: rgba(0, 0, 0, 0.12);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 40px rgba(168, 85, 247, 0.1);
+  --shadow-glow-blue: 0 0 40px rgba(99, 102, 241, 0.1);
+
+  --gradient-card: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(99, 102, 241, 0.03));
+}
+
+[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .glass-card,
+[data-theme="light"] .credit-card {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .navbar {
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom-color: var(--border-subtle);
+}
+
+[data-theme="light"] .input-field,
+[data-theme="light"] .search-select-input {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .modal {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .confirm-overlay {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .search-select-dropdown {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .search-select-option:hover,
+[data-theme="light"] .search-select-option.selected {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="light"] .data-table th {
+  background: var(--bg-tertiary);
+}
+
+[data-theme="light"] .stat-card {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: var(--transition-fast);
+}
+.theme-toggle:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-purple);
+}
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+    var(--bg-card) 0%,
+    var(--bg-card-hover) 50%,
+    var(--bg-card) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: var(--radius-sm);
+}
+
+.skeleton-line {
+  height: 16px;
+  border-radius: 4px;
+}
+
+.skeleton-image {
+  height: 160px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.skeleton-card {
+  background: var(--bg-glass);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================
+   CONFETTI ANIMATION
+   ============================================ */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(var(--drift)) rotate(var(--rotation));
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   CARD STACK
+   ============================================ */
+.card-stack-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.card-stack {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 100px;
+  min-width: 260px;
+}
+
+.card-stack-item {
+  position: absolute;
+  width: 140px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-stack-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.card-stack-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ============================================
+   UNDO TOAST
+   ============================================ */
+.toast-undo {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+  animation: fadeInUp 0.3s ease-out;
+  font-size: 0.9rem;
+}
+
+.toast-undo-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent-red);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  animation: undo-timer 10s linear forwards;
+}
+
+@keyframes undo-timer {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* ============================================
+   POPULARITY BADGE
+   ============================================ */
+.popularity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  background: var(--bg-card);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}

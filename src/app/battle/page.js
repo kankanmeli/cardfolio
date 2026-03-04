@@ -254,80 +254,89 @@ export default function CardBattlePage() {
 
                 {/* Battle Results */}
                 {battleData && (
-                    <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                        {/* Header with names + ranks */}
-                        <div style={{
-                            display: 'grid', gridTemplateColumns: '1fr auto 1fr',
-                            padding: '20px 24px', borderBottom: '1px solid var(--border-color)',
-                            background: 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(59,130,246,0.04))',
-                        }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <Link href={`/u/${battleData.a.profile.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px' }}>{battleData.a.displayName}</div>
-                                </Link>
-                                {battleData.a.profile.is_premium && <RankBadge points={battleData.a.points} size="sm" />}
+                    <>
+                        <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+                            {/* Header with names + ranks */}
+                            <div style={{
+                                display: 'grid', gridTemplateColumns: '1fr auto 1fr',
+                                alignItems: 'center', gap: '16px', padding: '20px 24px',
+                                background: 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(59,130,246,0.04))',
+                            }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <Link href={`/u/${battleData.a.profile.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px' }}>{battleData.a.displayName}</div>
+                                    </Link>
+                                    {battleData.a.profile.is_premium && <RankBadge points={battleData.a.points} size="sm" />}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--text-muted)' }}>⚔️</span>
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <Link href={`/u/${battleData.b.profile.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px' }}>{battleData.b.displayName}</div>
+                                    </Link>
+                                    {battleData.b.profile.is_premium && <RankBadge points={battleData.b.points} size="sm" />}
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <span style={{ fontWeight: 900, fontSize: '1.2rem', color: 'var(--text-muted)' }}>⚔️</span>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <Link href={`/u/${battleData.b.profile.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px' }}>{battleData.b.displayName}</div>
-                                </Link>
-                                {battleData.b.profile.is_premium && <RankBadge points={battleData.b.points} size="sm" />}
-                            </div>
+
+                            {/* Stats Table */}
+                            <table className="data-table" style={{ margin: 0 }}>
+                                <tbody>
+                                    <StatRow label="Total Cards" valA={battleData.a.totalCards} valB={battleData.b.totalCards} />
+                                    <StatRow label="Active Cards" valA={battleData.a.activeCards} valB={battleData.b.activeCards} />
+                                    <StatRow label="Profile Points" valA={battleData.a.points} valB={battleData.b.points} format="locale" />
+                                    <StatRow label="Total Fees/yr" valA={battleData.a.totalFees} valB={battleData.b.totalFees} format="currency" />
+                                    <StatRow label="Cashback Earned" valA={battleData.a.totalCashback} valB={battleData.b.totalCashback} format="currency" />
+                                    <StatRow label="Reward Points" valA={battleData.a.totalRP} valB={battleData.b.totalRP} format="locale" />
+                                    <StatRow label="Rewards Cards" valA={battleData.a.rewardsCount} valB={battleData.b.rewardsCount} />
+                                    <StatRow label="Cashback Cards" valA={battleData.a.cashbackCount} valB={battleData.b.cashbackCount} />
+                                    <StatRow label="LTF Cards" valA={battleData.a.ltfCount} valB={battleData.b.ltfCount} />
+                                    <StatRow label="FYF Cards" valA={battleData.a.fyfCount} valB={battleData.b.fyfCount} />
+                                    <StatRow label="Paid Cards" valA={battleData.a.paidCount} valB={battleData.b.paidCount} />
+                                    <StatRow label="Banks" valA={battleData.a.banks.length} valB={battleData.b.banks.length} />
+                                </tbody>
+                            </table>
+
+                            {/* Winner */}
+                            {(() => {
+                                let winsA = 0, winsB = 0;
+                                const metrics = [
+                                    [battleData.a.totalCards, battleData.b.totalCards],
+                                    [battleData.a.points, battleData.b.points],
+                                    [battleData.a.totalCashback, battleData.b.totalCashback],
+                                    [battleData.a.totalRP, battleData.b.totalRP],
+                                    [battleData.a.banks.length, battleData.b.banks.length],
+                                ];
+                                metrics.forEach(([a, b]) => { if (a > b) winsA++; if (b > a) winsB++; });
+
+                                const winner = winsA > winsB ? battleData.a : winsB > winsA ? battleData.b : null;
+                                return (
+                                    <div style={{
+                                        padding: '16px 24px', textAlign: 'center',
+                                        borderTop: '1px solid var(--border-color)',
+                                        background: winner ? 'rgba(34,197,94,0.06)' : 'rgba(168,85,247,0.06)',
+                                    }}>
+                                        {winner ? (
+                                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                                                🏆 {winner.displayName} wins the battle! ({Math.max(winsA, winsB)}/{metrics.length} categories)
+                                            </span>
+                                        ) : (
+                                            <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                                                🤝 It&apos;s a tie! Both portfolios are evenly matched.
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
-                        {/* Stats Table */}
-                        <table className="data-table" style={{ margin: 0 }}>
-                            <tbody>
-                                <StatRow label="Total Cards" valA={battleData.a.totalCards} valB={battleData.b.totalCards} />
-                                <StatRow label="Active Cards" valA={battleData.a.activeCards} valB={battleData.b.activeCards} />
-                                <StatRow label="Profile Points" valA={battleData.a.points} valB={battleData.b.points} format="locale" />
-                                <StatRow label="Total Fees/yr" valA={battleData.a.totalFees} valB={battleData.b.totalFees} format="currency" />
-                                <StatRow label="Cashback Earned" valA={battleData.a.totalCashback} valB={battleData.b.totalCashback} format="currency" />
-                                <StatRow label="Reward Points" valA={battleData.a.totalRP} valB={battleData.b.totalRP} format="locale" />
-                                <StatRow label="Rewards Cards" valA={battleData.a.rewardsCount} valB={battleData.b.rewardsCount} />
-                                <StatRow label="Cashback Cards" valA={battleData.a.cashbackCount} valB={battleData.b.cashbackCount} />
-                                <StatRow label="LTF Cards" valA={battleData.a.ltfCount} valB={battleData.b.ltfCount} />
-                                <StatRow label="FYF Cards" valA={battleData.a.fyfCount} valB={battleData.b.fyfCount} />
-                                <StatRow label="Paid Cards" valA={battleData.a.paidCount} valB={battleData.b.paidCount} />
-                                <StatRow label="Banks" valA={battleData.a.banks.length} valB={battleData.b.banks.length} />
-                            </tbody>
-                        </table>
-
-                        {/* Winner */}
-                        {(() => {
-                            let winsA = 0, winsB = 0;
-                            const metrics = [
-                                [battleData.a.totalCards, battleData.b.totalCards],
-                                [battleData.a.points, battleData.b.points],
-                                [battleData.a.totalCashback, battleData.b.totalCashback],
-                                [battleData.a.totalRP, battleData.b.totalRP],
-                                [battleData.a.banks.length, battleData.b.banks.length],
-                            ];
-                            metrics.forEach(([a, b]) => { if (a > b) winsA++; if (b > a) winsB++; });
-
-                            const winner = winsA > winsB ? battleData.a : winsB > winsA ? battleData.b : null;
-                            return (
-                                <div style={{
-                                    padding: '16px 24px', textAlign: 'center',
-                                    borderTop: '1px solid var(--border-color)',
-                                    background: winner ? 'rgba(34,197,94,0.06)' : 'rgba(168,85,247,0.06)',
-                                }}>
-                                    {winner ? (
-                                        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                                            🏆 {winner.displayName} wins the battle! ({Math.max(winsA, winsB)}/{metrics.length} categories)
-                                        </span>
-                                    ) : (
-                                        <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                                            🤝 It&apos;s a tie! Both portfolios are evenly matched.
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })()}
-                    </div>
+                        {/* Share Button */}
+                        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                            <button className="btn btn-secondary" onClick={() => shareBattleResult(battleData)}>
+                                📸 Share Battle Result
+                            </button>
+                        </div>
+                    </>
                 )}
 
                 {!battleData && !battling && (
@@ -340,4 +349,112 @@ export default function CardBattlePage() {
             </div>
         </>
     );
+
+    function shareBattleResult(data) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 500;
+
+        const bg = ctx.createLinearGradient(0, 0, 800, 500);
+        bg.addColorStop(0, '#0a0a1a');
+        bg.addColorStop(1, '#1a1a3e');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, 800, 500);
+
+        ctx.fillStyle = '#a855f7';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Card Battle Result', 400, 45);
+
+        ctx.font = 'bold 22px Arial, sans-serif';
+        ctx.fillStyle = '#f0f0f5';
+        ctx.textAlign = 'right';
+        ctx.fillText(data.a.displayName, 360, 85);
+        ctx.fillStyle = '#a855f7';
+        ctx.textAlign = 'center';
+        ctx.fillText('VS', 400, 85);
+        ctx.fillStyle = '#f0f0f5';
+        ctx.textAlign = 'left';
+        ctx.fillText(data.b.displayName, 440, 85);
+
+        ctx.strokeStyle = 'rgba(168,85,247,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(50, 100);
+        ctx.lineTo(750, 100);
+        ctx.stroke();
+
+        const stats = [
+            ['Total Cards', data.a.totalCards, data.b.totalCards],
+            ['Active Cards', data.a.activeCards, data.b.activeCards],
+            ['Profile Points', data.a.points.toLocaleString('en-IN'), data.b.points.toLocaleString('en-IN')],
+            ['Total Fees/yr', inrFormatter.format(data.a.totalFees), inrFormatter.format(data.b.totalFees)],
+            ['Cashback', inrFormatter.format(data.a.totalCashback), inrFormatter.format(data.b.totalCashback)],
+            ['Reward Points', data.a.totalRP.toLocaleString('en-IN'), data.b.totalRP.toLocaleString('en-IN')],
+            ['LTF Cards', data.a.ltfCount, data.b.ltfCount],
+            ['FYF Cards', data.a.fyfCount, data.b.fyfCount],
+            ['Banks', data.a.banks.length, data.b.banks.length],
+        ];
+
+        const startY = 125;
+        const rowH = 30;
+        stats.forEach(([label, valA, valB], i) => {
+            const y = startY + i * rowH;
+            const numA = typeof valA === 'number' ? valA : parseFloat(String(valA).replace(/[^\d.-]/g, '')) || 0;
+            const numB = typeof valB === 'number' ? valB : parseFloat(String(valB).replace(/[^\d.-]/g, '')) || 0;
+            const winA = numA > numB;
+            const winB = numB > numA;
+
+            if (i % 2 === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                ctx.fillRect(50, y - 18, 700, rowH);
+            }
+
+            ctx.font = winA ? 'bold 14px Arial, sans-serif' : '14px Arial, sans-serif';
+            ctx.fillStyle = winA ? '#22c55e' : '#a0a0b8';
+            ctx.textAlign = 'right';
+            ctx.fillText(String(valA), 340, y);
+
+            ctx.font = '13px Arial, sans-serif';
+            ctx.fillStyle = '#6b6b80';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, 400, y);
+
+            ctx.font = winB ? 'bold 14px Arial, sans-serif' : '14px Arial, sans-serif';
+            ctx.fillStyle = winB ? '#22c55e' : '#a0a0b8';
+            ctx.textAlign = 'left';
+            ctx.fillText(String(valB), 460, y);
+        });
+
+        let winsA = 0, winsB = 0;
+        const deciderMetrics = [
+            [data.a.totalCards, data.b.totalCards],
+            [data.a.points, data.b.points],
+            [data.a.totalCashback, data.b.totalCashback],
+            [data.a.totalRP, data.b.totalRP],
+            [data.a.banks.length, data.b.banks.length],
+        ];
+        deciderMetrics.forEach(([a, b]) => { if (a > b) winsA++; if (b > a) winsB++; });
+        const winner = winsA > winsB ? data.a : winsB > winsA ? data.b : null;
+
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = winner ? '#22c55e' : '#a855f7';
+        const winText = winner
+            ? `${winner.displayName} wins! (${Math.max(winsA, winsB)}/${deciderMetrics.length})`
+            : 'It\'s a tie!';
+        ctx.fillText(winText, 400, 420);
+
+        ctx.font = '12px Arial, sans-serif';
+        ctx.fillStyle = 'rgba(168,85,247,0.5)';
+        ctx.textAlign = 'center';
+        ctx.fillText('CardFolio - cardfolio.app', 400, 480);
+        ctx.fillText('Battle your friends at cardfolio.app/battle', 400, 460);
+
+        const link = document.createElement('a');
+        link.download = `battle-${data.a.profile.slug}-vs-${data.b.profile.slug}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.92);
+        link.click();
+    }
 }
