@@ -49,7 +49,7 @@ export default function DashboardPage() {
     const [undoDelete, setUndoDelete] = useState(null);
     const undoTimerRef = useRef(null);
 
-    const isPremium = profile?.is_premium === true;
+    const isPremium = profile?.is_premium === true && (!profile?.premium_expires_at || new Date(profile.premium_expires_at) > new Date());
     const maxCards = isPremium ? MAX_CARDS_PREMIUM : MAX_CARDS_FREE;
 
     useEffect(() => {

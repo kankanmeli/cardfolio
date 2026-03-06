@@ -32,7 +32,7 @@ export default function CardBattlePage() {
 
         const { data: profs } = await supabase
             .from('profiles')
-            .select('id, display_name, slug, avatar_url, is_premium, is_banned, reddit_username, hide_name_on_profile')
+            .select('id, display_name, slug, avatar_url, is_premium, premium_expires_at, is_banned, reddit_username, hide_name_on_profile')
             .eq('is_profile_public', true)
             .eq('is_banned', false);
 
@@ -66,8 +66,10 @@ export default function CardBattlePage() {
         const cashbackCount = enriched.filter(c => c.category === 'Cashback').length;
         const banks = [...new Set(enriched.map(c => c.bank_name).filter(Boolean))];
 
+        const isPremiumActive = profile?.is_premium === true && (!profile?.premium_expires_at || new Date(profile.premium_expires_at) > new Date());
+
         return {
-            profile,
+            profile: { ...profile, is_premium: isPremiumActive },
             displayName: getDisplayName(profile),
             cards: enriched,
             activeCards: active.length,

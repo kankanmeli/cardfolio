@@ -33,7 +33,7 @@ export default function LeaderboardPage() {
         // Fetch all premium users with their cards
         const { data: premiumUsers } = await supabase
             .from('profiles')
-            .select('id, display_name, slug, avatar_url, is_premium, is_banned, reddit_username, hide_name_on_profile')
+            .select('id, display_name, slug, avatar_url, is_premium, premium_expires_at, is_banned, reddit_username, hide_name_on_profile')
             .eq('is_premium', true)
             .eq('is_banned', false)
             .eq('is_profile_public', true);
@@ -44,8 +44,17 @@ export default function LeaderboardPage() {
             return;
         }
 
+        // Filter out expired premium
+        const activePremiumUsers = premiumUsers.filter(u => !u.premium_expires_at || new Date(u.premium_expires_at) > new Date());
+
+        if (activePremiumUsers.length === 0) {
+            setLeaderboard([]);
+            setLoading(false);
+            return;
+        }
+
         // Fetch all cards for premium users with tier info
-        const userIds = premiumUsers.map(u => u.id);
+        const userIds = activePremiumUsers.map(u => u.id);
         const { data: allCards } = await supabase
             .from('user_cards')
             .select(`
@@ -55,7 +64,7 @@ export default function LeaderboardPage() {
             .in('user_id', userIds);
 
         // Calculate points per user
-        const entries = premiumUsers.map(u => {
+        const entries = activePremiumUsers.map(u => {
             const userCards = (allCards || [])
                 .filter(c => c.user_id === u.id)
                 .map(c => ({ ...c, tier: c.master_cards?.tier || 'entry' }));
@@ -85,7 +94,7 @@ export default function LeaderboardPage() {
         setLoading(false);
     };
 
-    const isPremium = userProfile?.is_premium === true;
+    const isPremium = userProfile?.is_premium === true && (!userProfile?.premium_expires_at || new Date(userProfile.premium_expires_at) > new Date());
 
     if (loading) {
         return (

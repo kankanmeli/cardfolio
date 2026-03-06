@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
-import { validate, createBankSchema, createCardCatalogSchema, renameUserSchema, moderationSchema } from '@/lib/validation';
+import { validate, createBankSchema, createCardCatalogSchema, renameUserSchema, moderationSchema, updatePremiumSchema } from '@/lib/validation';
 
 export default function AdminPage() {
     const [user, setUser] = useState(null);
@@ -30,6 +30,8 @@ export default function AdminPage() {
     const [userSearch, setUserSearch] = useState('');
     const [editingUser, setEditingUser] = useState(null);
     const [editUserName, setEditUserName] = useState('');
+    const [editingPremiumUser, setEditingPremiumUser] = useState(null);
+    const [premiumForm, setPremiumForm] = useState({ isPremium: false, expiresAt: '' });
     const [confirmAction, setConfirmAction] = useState(null);
 
     useEffect(() => {
@@ -274,16 +276,28 @@ export default function AdminPage() {
         setConfirmAction(null);
     };
 
-    const handleTogglePremium = async (userId, makePremium) => {
+    const handleSavePremium = async () => {
+        const { error: validationError, data: validData } = validate(updatePremiumSchema, {
+            userId: editingPremiumUser.id,
+            isPremium: premiumForm.isPremium,
+            expiresAt: premiumForm.expiresAt || null,
+        });
+
+        if (validationError) { showToast(validationError, 'error'); return; }
+
         const { error } = await supabase
             .from('profiles')
-            .update({ is_premium: makePremium })
-            .eq('id', userId);
+            .update({
+                is_premium: validData.isPremium,
+                premium_expires_at: validData.expiresAt ? new Date(validData.expiresAt).toISOString() : null
+            })
+            .eq('id', validData.userId);
 
         if (error) {
             showToast('Failed to update premium status', 'error');
         } else {
-            showToast(makePremium ? 'User upgraded to Premium ⭐' : 'Premium removed');
+            showToast('Premium status updated');
+            setEditingPremiumUser(null);
             await fetchUsers();
         }
     };
@@ -636,9 +650,15 @@ export default function AdminPage() {
                                                         <button
                                                             className={`btn btn-sm ${u.is_premium ? 'btn-secondary' : 'btn-primary'}`}
                                                             style={u.is_premium ? {} : { background: 'var(--accent-purple)' }}
-                                                            onClick={() => handleTogglePremium(u.id, !u.is_premium)}
+                                                            onClick={() => {
+                                                                setEditingPremiumUser(u);
+                                                                setPremiumForm({
+                                                                    isPremium: u.is_premium,
+                                                                    expiresAt: u.premium_expires_at ? new Date(u.premium_expires_at).toISOString().split('T')[0] : ''
+                                                                });
+                                                            }}
                                                         >
-                                                            {u.is_premium ? '⭐ Remove Premium' : '⭐ Make Premium'}
+                                                            {u.is_premium ? '⭐ Manage Premium' : '⭐ Make Premium'}
                                                         </button>
                                                         <button
                                                             className={`btn btn-sm ${u.is_banned ? 'btn-secondary' : 'btn-danger'}`}
@@ -817,6 +837,71 @@ export default function AdminPage() {
                         <div className="modal-actions">
                             <button className="btn btn-secondary" onClick={() => setEditingUser(null)}>Cancel</button>
                             <button className="btn btn-primary" onClick={handleRenameUser}>Save</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manage Premium Modal */}
+            {editingPremiumUser && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setEditingPremiumUser(null); }}>
+                    <div className="modal">
+                        <h2>Manage Premium for {editingPremiumUser.display_name}</h2>
+                        
+                        <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <input
+                                type="checkbox"
+                                id="isPremiumCheck"
+                                checked={premiumForm.isPremium}
+                                onChange={(e) => setPremiumForm(prev => ({ ...prev, isPremium: e.target.checked }))}
+                                style={{ width: '20px', height: '20px' }}
+                            />
+                            <label htmlFor="isPremiumCheck" style={{ fontSize: '1.1rem', cursor: 'pointer' }}>
+                                Active Premium Status ⭐
+                            </label>
+                        </div>
+
+                        {premiumForm.isPremium && (
+                            <div className="input-group">
+                                <label className="input-label">Expires At (Optional)</label>
+                                <input
+                                    type="date"
+                                    className="input-field"
+                                    value={premiumForm.expiresAt}
+                                    onChange={(e) => setPremiumForm(prev => ({ ...prev, expiresAt: e.target.value }))}
+                                />
+                                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                    Leave blank for lifetime premium.
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-sm btn-ghost" 
+                                        onClick={() => {
+                                            const d = new Date(); d.setMonth(d.getMonth() + 1);
+                                            setPremiumForm(prev => ({ ...prev, expiresAt: d.toISOString().split('T')[0] }));
+                                        }}
+                                    >+1 Month</button>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => {
+                                            const d = new Date(); d.setFullYear(d.getFullYear() + 1);
+                                            setPremiumForm(prev => ({ ...prev, expiresAt: d.toISOString().split('T')[0] }));
+                                        }}
+                                    >+1 Year</button>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => setPremiumForm(prev => ({ ...prev, expiresAt: '' }))}
+                                    >Lifetime</button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={() => setEditingPremiumUser(null)}>Cancel</button>
+                            <button className="btn btn-primary" onClick={handleSavePremium}>Save</button>
                         </div>
                     </div>
                 </div>

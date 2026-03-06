@@ -42,6 +42,13 @@ export const moderationSchema = z.object({
     userId: z.string().min(1),
 });
 
+// Admin: update premium
+export const updatePremiumSchema = z.object({
+    userId: z.string().min(1),
+    isPremium: z.boolean(),
+    expiresAt: z.string().nullable().optional(),
+});
+
 // Admin login
 export const adminLoginSchema = z.object({
     email: z.string().email('Please enter a valid email'),

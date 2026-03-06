@@ -34,7 +34,7 @@ export default function PortfolioPage() {
 
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('id, display_name, slug, avatar_url, created_at, is_profile_public, reddit_username, hide_name_on_profile, is_premium')
+            .select('id, display_name, slug, avatar_url, created_at, is_profile_public, reddit_username, hide_name_on_profile, is_premium, premium_expires_at')
             .eq('slug', slug)
             .single();
 
@@ -65,7 +65,7 @@ export default function PortfolioPage() {
         }
 
         setProfile(profileData);
-        setProfileIsPremium(profileData.is_premium === true);
+        setProfileIsPremium(profileData.is_premium === true && (!profileData.premium_expires_at || new Date(profileData.premium_expires_at) > new Date()));
 
         const { data: cardsData } = await supabase
             .from('user_cards')
