@@ -872,6 +872,10 @@ export default function AdminPage() {
                             >
                                 <option value="Rewards">Rewards</option>
                                 <option value="Cashback">Cashback</option>
+                                <option value="Travel">Travel</option>
+                                <option value="Fuel">Fuel</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                                <option value="Business">Business</option>
                             </select>
                         </div>
 
