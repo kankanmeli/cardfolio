@@ -24,6 +24,8 @@ export default function AdminPage() {
     const [cardImageFile, setCardImageFile] = useState(null);
     const [savingCard, setSavingCard] = useState(false);
     const [cardSearch, setCardSearch] = useState('');
+    const [csvImporting, setCsvImporting] = useState(false);
+    const csvFileRef = useState(null);
 
     // User management state
     const [users, setUsers] = useState([]);
@@ -236,6 +238,86 @@ export default function AdminPage() {
     const filteredCards = masterCards.filter(c =>
         `${c.bank_name} ${c.card_name}`.toLowerCase().includes(cardSearch.toLowerCase())
     );
+
+    // CSV Bulk Import
+    const handleCsvImport = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = ''; // reset file input
+
+        setCsvImporting(true);
+        try {
+            const text = await file.text();
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) { showToast('CSV must have a header row and at least one data row', 'error'); setCsvImporting(false); return; }
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const bankIdx = headers.findIndex(h => h === 'bank' || h === 'bank_name');
+            const cardIdx = headers.findIndex(h => h === 'card' || h === 'card_name');
+            const joinFeeIdx = headers.findIndex(h => h.includes('joining') || h === 'joining_fee');
+            const annualFeeIdx = headers.findIndex(h => h.includes('annual') || h === 'annual_fee');
+            const tierIdx = headers.findIndex(h => h === 'tier');
+            const categoryIdx = headers.findIndex(h => h === 'category');
+
+            if (bankIdx === -1 || cardIdx === -1) {
+                showToast('CSV must have "bank" and "card" columns', 'error');
+                setCsvImporting(false);
+                return;
+            }
+
+            let added = 0, skipped = 0, errors = 0;
+
+            for (let i = 1; i < lines.length; i++) {
+                // Simple CSV parsing (handles basic cases)
+                const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                const bankName = cols[bankIdx];
+                const cardName = cols[cardIdx];
+                if (!bankName || !cardName) { skipped++; continue; }
+
+                // Find or create bank
+                let bank = banks.find(b => b.name.toLowerCase() === bankName.toLowerCase());
+                if (!bank) {
+                    const { data: newBank, error: bankErr } = await supabase
+                        .from('banks')
+                        .insert({ name: bankName })
+                        .select()
+                        .single();
+                    if (bankErr) {
+                        if (bankErr.code === '23505') {
+                            const { data: existing } = await supabase.from('banks').select('*').eq('name', bankName).single();
+                            bank = existing;
+                        } else { errors++; continue; }
+                    } else {
+                        bank = newBank;
+                        setBanks(prev => [...prev, newBank]);
+                    }
+                }
+
+                const insertData = {
+                    bank_id: bank.id,
+                    card_name: cardName,
+                    default_joining_fee: joinFeeIdx >= 0 ? Number(cols[joinFeeIdx]) || 0 : 0,
+                    default_annual_fee: annualFeeIdx >= 0 ? Number(cols[annualFeeIdx]) || 0 : 0,
+                    tier: tierIdx >= 0 && ['entry', 'mid-range', 'premium', 'super-premium'].includes(cols[tierIdx]) ? cols[tierIdx] : 'entry',
+                    category: categoryIdx >= 0 && cols[categoryIdx] ? cols[categoryIdx] : 'Rewards',
+                };
+
+                const { error: cardErr } = await supabase.from('master_cards').insert(insertData);
+                if (cardErr) {
+                    if (cardErr.code === '23505') skipped++;
+                    else errors++;
+                } else {
+                    added++;
+                }
+            }
+
+            showToast(`Import done! ${added} added, ${skipped} skipped (duplicates), ${errors} errors`);
+            await Promise.all([fetchBanks(), fetchMasterCards()]);
+        } catch (err) {
+            showToast('Failed to parse CSV: ' + err.message, 'error');
+        }
+        setCsvImporting(false);
+    };
 
     // ============================================
     // USER MANAGEMENT
@@ -495,6 +577,16 @@ export default function AdminPage() {
                             >
                                 + Add Card to DB
                             </button>
+                            <label className={`btn btn-secondary ${csvImporting ? 'btn-disabled' : ''}`} style={{ cursor: csvImporting ? 'wait' : 'pointer' }}>
+                                {csvImporting ? '⏳ Importing...' : '📄 Import CSV'}
+                                <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={handleCsvImport}
+                                    disabled={csvImporting}
+                                    style={{ display: 'none' }}
+                                />
+                            </label>
                         </div>
 
                         {filteredCards.length === 0 ? (
