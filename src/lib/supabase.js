@@ -8,7 +8,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Client-side Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'pkce',
+  },
+});
 
 // Server-side admin client (for admin operations)
 export function createAdminClient() {
