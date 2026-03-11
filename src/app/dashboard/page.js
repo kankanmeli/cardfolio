@@ -90,6 +90,7 @@ export default function DashboardPage() {
         bank_name: card.master_cards?.banks?.name || '',
         card_name: card.master_cards?.card_name || '',
         image_url: card.master_cards?.image_url || '',
+        card_category: card.master_cards?.category || 'Rewards',
     });
 
     const sortCards = (list, method) => {
@@ -197,7 +198,6 @@ export default function DashboardPage() {
                 joining_fee: formData.joining_fee || 0,
                 annual_fee: formData.annual_fee || 0,
                 card_type: formData.card_type,
-                card_category: formData.card_category || 'Rewards',
                 holding_since: formData.holding_since || null,
                 cashback_earned: formData.cashback_earned || 0,
                 reward_points_earned: formData.reward_points_earned || 0,
@@ -230,7 +230,6 @@ export default function DashboardPage() {
                 joining_fee: formData.joining_fee || 0,
                 annual_fee: formData.annual_fee || 0,
                 card_type: formData.card_type,
-                card_category: formData.card_category || 'Rewards',
                 holding_since: formData.holding_since || null,
                 cashback_earned: formData.cashback_earned || 0,
                 reward_points_earned: formData.reward_points_earned || 0,

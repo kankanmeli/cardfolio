@@ -10,7 +10,6 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
         joining_fee: initialData?.joining_fee || '',
         annual_fee: initialData?.annual_fee || '',
         card_type: initialData?.card_type || 'Paid',
-        card_category: initialData?.card_category || 'Rewards',
         holding_since: initialData?.holding_since || '',
         cashback_earned: initialData?.cashback_earned || '',
         reward_points_earned: initialData?.reward_points_earned || '',
@@ -33,9 +32,22 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
         : masterCards;
 
     const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const updated = { ...prev, [field]: value };
+            // Auto-zero joining fee when card type is LTF or FYF
+            if (field === 'card_type' && (value === 'LTF' || value === 'FYF')) {
+                updated.joining_fee = 0;
+            }
+            return updated;
+        });
         setFormError('');
     };
+
+    // Joining fee disabled for LTF and FYF
+    const isJoiningFeeDisabled = formData.card_type === 'LTF' || formData.card_type === 'FYF';
+
+    // Category comes from the selected master card (admin-set)
+    const selectedCategory = selectedCard?.category || 'Rewards';
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -119,8 +131,10 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
                         type="number"
                         className="input-field"
                         placeholder="0"
-                        value={formData.joining_fee}
+                        value={isJoiningFeeDisabled ? 0 : formData.joining_fee}
                         onChange={(e) => handleChange('joining_fee', e.target.value)}
+                        disabled={isJoiningFeeDisabled}
+                        style={isJoiningFeeDisabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                     />
                 </div>
                 <div className="input-group">
@@ -150,14 +164,13 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
 
             <div className="input-group">
                 <label className="input-label">Card Category</label>
-                <select
+                <input
+                    type="text"
                     className="input-field"
-                    value={formData.card_category}
-                    onChange={(e) => handleChange('card_category', e.target.value)}
-                >
-                    <option value="Rewards">Rewards</option>
-                    <option value="Cashback">Cashback</option>
-                </select>
+                    value={selectedCategory}
+                    disabled
+                    style={{ opacity: 0.7, cursor: 'not-allowed' }}
+                />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

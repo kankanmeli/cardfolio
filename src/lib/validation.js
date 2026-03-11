@@ -10,7 +10,6 @@ export const userCardSchema = z.object({
     joining_fee: z.coerce.number().min(0, 'Joining fee cannot be negative').default(0),
     annual_fee: z.coerce.number().min(0, 'Annual fee cannot be negative').default(0),
     card_type: z.enum(['LTF', 'FYF', 'Paid'], { message: 'Invalid card type' }),
-    card_category: z.enum(['Rewards', 'Cashback'], { message: 'Invalid card category' }).default('Rewards'),
     holding_since: z.string().optional().default(''),
     cashback_earned: z.coerce.number().min(0, 'Cashback cannot be negative').default(0),
     reward_points_earned: z.coerce.number().int().min(0, 'RPs cannot be negative').default(0),

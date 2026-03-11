@@ -88,6 +88,7 @@ export default function PortfolioPage() {
                     bank_name: card.master_cards?.banks?.name || '',
                     card_name: card.master_cards?.card_name || '',
                     image_url: card.master_cards?.image_url || '',
+                    card_category: card.master_cards?.category || 'Rewards',
                 }))
                 .sort((a, b) => {
                     const nameA = `${a.bank_name} ${a.card_name}`.toLowerCase();
