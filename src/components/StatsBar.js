@@ -52,6 +52,8 @@ export default function StatsBar({ cards }) {
     const ltf = cards.filter(c => c.card_type === 'LTF').length;
     const fyf = cards.filter(c => c.card_type === 'FYF').length;
     const paid = cards.filter(c => c.card_type === 'Paid').length;
+    const rewardsCards = cards.filter(c => c.card_category === 'Rewards').length;
+    const cashbackCards = cards.filter(c => c.card_category === 'Cashback').length;
 
     const stats = [
         { label: 'Total Cards', value: cards.length, format: 'number' },
@@ -60,6 +62,8 @@ export default function StatsBar({ cards }) {
         { label: 'LTF', value: ltf, format: 'number' },
         { label: 'FYF', value: fyf, format: 'number' },
         { label: 'Paid', value: paid, format: 'number' },
+        { label: 'Rewards Cards', value: rewardsCards, format: 'number' },
+        { label: 'Cashback Cards', value: cashbackCards, format: 'number' },
         { label: 'Joining Fees', value: totalJoiningFees, format: 'currency' },
         { label: 'Annual Fees', value: totalAnnualFees, format: 'currency' },
         { label: 'Cashback', value: totalCashback, format: 'currency' },

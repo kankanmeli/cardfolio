@@ -10,6 +10,7 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
         joining_fee: initialData?.joining_fee || '',
         annual_fee: initialData?.annual_fee || '',
         card_type: initialData?.card_type || 'Paid',
+        card_category: initialData?.card_category || 'Rewards',
         holding_since: initialData?.holding_since || '',
         cashback_earned: initialData?.cashback_earned || '',
         reward_points_earned: initialData?.reward_points_earned || '',
@@ -144,6 +145,18 @@ export default function CardForm({ banks, masterCards, initialData, onSubmit, on
                     <option value="LTF">LTF (Lifetime Free)</option>
                     <option value="FYF">FYF (First Year Free)</option>
                     <option value="Paid">Paid</option>
+                </select>
+            </div>
+
+            <div className="input-group">
+                <label className="input-label">Card Category</label>
+                <select
+                    className="input-field"
+                    value={formData.card_category}
+                    onChange={(e) => handleChange('card_category', e.target.value)}
+                >
+                    <option value="Rewards">Rewards</option>
+                    <option value="Cashback">Cashback</option>
                 </select>
             </div>
 

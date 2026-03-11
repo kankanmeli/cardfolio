@@ -8,11 +8,11 @@ const inrFormatter = new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
 });
 
-export default function ExportPortfolio({ cards, isPremium }) {
+export default function ExportPortfolio({ cards }) {
     const [exporting, setExporting] = useState(false);
 
     const exportCSV = () => {
-        if (!isPremium) return;
+
         setExporting(true);
         try {
             const headers = ['Bank Name', 'Card Name', 'Card Type', 'Category', 'Joining Fee', 'Annual Fee', 'Holding Since', 'Duration', 'Cashback Earned', 'Reward Points', 'Status', 'Closed Date'];
@@ -42,7 +42,7 @@ export default function ExportPortfolio({ cards, isPremium }) {
     };
 
     const exportJSON = () => {
-        if (!isPremium) return;
+
         setExporting(true);
         try {
             const data = cards.map(c => ({
@@ -85,14 +85,6 @@ export default function ExportPortfolio({ cards, isPremium }) {
         a.click();
         URL.revokeObjectURL(url);
     };
-
-    if (!isPremium) {
-        return (
-            <button className="btn btn-ghost btn-sm" disabled title="Premium feature">
-                📋 Export 🔒
-            </button>
-        );
-    }
 
     return (
         <div style={{ display: 'flex', gap: '6px' }}>

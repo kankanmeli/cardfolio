@@ -49,8 +49,8 @@ export default function DashboardPage() {
     const [undoDelete, setUndoDelete] = useState(null);
     const undoTimerRef = useRef(null);
 
-    const isPremium = profile?.is_premium === true && (!profile?.premium_expires_at || new Date(profile.premium_expires_at) > new Date());
-    const maxCards = isPremium ? MAX_CARDS_PREMIUM : MAX_CARDS_FREE;
+    const isPremium = true; // Premium restrictions disabled — all features available to all users
+    const maxCards = MAX_CARDS_FREE;
 
     useEffect(() => {
         checkUser();
@@ -183,10 +183,7 @@ export default function DashboardPage() {
 
     const handleAddCard = async (formData) => {
         if (cards.length >= maxCards) {
-            showToastMsg(isPremium
-                ? `You've reached the limit of ${MAX_CARDS_PREMIUM} cards.`
-                : `Free tier allows ${MAX_CARDS_FREE} cards. Upgrade to Premium for up to ${MAX_CARDS_PREMIUM}!`,
-                'error');
+            showToastMsg(`You've reached the card limit.`, 'error');
             return;
         }
 
@@ -200,6 +197,7 @@ export default function DashboardPage() {
                 joining_fee: formData.joining_fee || 0,
                 annual_fee: formData.annual_fee || 0,
                 card_type: formData.card_type,
+                card_category: formData.card_category || 'Rewards',
                 holding_since: formData.holding_since || null,
                 cashback_earned: formData.cashback_earned || 0,
                 reward_points_earned: formData.reward_points_earned || 0,
@@ -232,6 +230,7 @@ export default function DashboardPage() {
                 joining_fee: formData.joining_fee || 0,
                 annual_fee: formData.annual_fee || 0,
                 card_type: formData.card_type,
+                card_category: formData.card_category || 'Rewards',
                 holding_since: formData.holding_since || null,
                 cashback_earned: formData.cashback_earned || 0,
                 reward_points_earned: formData.reward_points_earned || 0,
@@ -322,13 +321,11 @@ export default function DashboardPage() {
                     <div>
                         <h1 style={{ fontSize: '1.8rem' }}>
                             My Dashboard
-                            {isPremium && <span style={{ marginLeft: '8px', fontSize: '0.7rem', background: 'var(--gradient-accent)', padding: '3px 10px', borderRadius: '20px', color: 'white', verticalAlign: 'middle' }}>⭐ PREMIUM</span>}
                         </h1>
                         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                            Welcome, {profile?.display_name} · {cards.length}/{maxCards} cards
-                            {!isPremium && <span style={{ color: 'var(--accent-purple)', marginLeft: '8px' }}>(Free tier)</span>}
+                            Welcome, {profile?.display_name} · {cards.length} cards
                         </p>
-                        {isPremium && cards.length > 0 && (
+                        {cards.length > 0 && (
                             <div style={{ marginTop: '8px' }}>
                                 <RankBadge points={profilePoints} size="md" showProgress={true} />
                             </div>
@@ -359,24 +356,7 @@ export default function DashboardPage() {
                     }} />
                 )}
 
-                {/* Free tier upgrade nudge */}
-                {!isPremium && cards.length >= MAX_CARDS_FREE && (
-                    <div className="glass-card" style={{
-                        padding: '16px 20px', marginBottom: '20px', display: 'flex',
-                        alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px',
-                        border: '1px solid var(--accent-purple)', background: 'rgba(168,85,247,0.06)'
-                    }}>
-                        <div>
-                            <strong>You&apos;ve reached the free tier limit ({MAX_CARDS_FREE} cards)</strong>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0' }}>
-                                Upgrade to Premium for up to {MAX_CARDS_PREMIUM} cards, custom sorting, and watermark-free exports.
-                            </p>
-                        </div>
-                        <button className="btn btn-primary btn-sm" style={{ background: 'var(--accent-purple)', whiteSpace: 'nowrap' }}>
-                            ⭐ Upgrade to Premium
-                        </button>
-                    </div>
-                )}
+
 
                 <div className="divider"></div>
 
@@ -391,26 +371,16 @@ export default function DashboardPage() {
                         className="input-field"
                         value={sortBy}
                         onChange={(e) => {
-                            const val = e.target.value;
-                            if (val !== 'alpha' && !isPremium) {
-                                showToastMsg('Custom sorting is a Premium feature ⭐', 'error');
-                                return;
-                            }
-                            setSortBy(val);
+                            setSortBy(e.target.value);
                         }}
                         style={{ width: 'auto', minWidth: '180px', padding: '6px 12px' }}
                     >
                         {SORT_OPTIONS.map(opt => (
                             <option key={opt.value} value={opt.value}>
-                                {opt.label} {opt.value !== 'alpha' && !isPremium ? '🔒' : ''}
+                                {opt.label}
                             </option>
                         ))}
                     </select>
-                    {!isPremium && sortBy === 'alpha' && (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            ⭐ Unlock custom sorting with Premium
-                        </span>
-                    )}
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
                         <button className={`btn btn-sm ${viewMode === 'flat' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setViewMode('flat')} title="Flat view">

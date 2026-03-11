@@ -195,7 +195,7 @@ export default function PortfolioPage() {
                     <div className="profile-info">
                         <h1>
                             {displayName}
-                            {profileIsPremium && cards.length > 0 && (
+                            {cards.length > 0 && (
                                 <span style={{ marginLeft: '12px', verticalAlign: 'middle' }}>
                                     <RankBadge points={profilePoints} size="sm" />
                                 </span>

@@ -30,31 +30,21 @@ export default function LeaderboardPage() {
             setUserProfile(prof);
         }
 
-        // Fetch all premium users with their cards
-        const { data: premiumUsers } = await supabase
+        // Fetch all users with public profiles
+        const { data: allUsers } = await supabase
             .from('profiles')
-            .select('id, display_name, slug, avatar_url, is_premium, premium_expires_at, is_banned, reddit_username, hide_name_on_profile')
-            .eq('is_premium', true)
+            .select('id, display_name, slug, avatar_url, is_banned, reddit_username, hide_name_on_profile')
             .eq('is_banned', false)
             .eq('is_profile_public', true);
 
-        if (!premiumUsers || premiumUsers.length === 0) {
+        if (!allUsers || allUsers.length === 0) {
             setLeaderboard([]);
             setLoading(false);
             return;
         }
 
-        // Filter out expired premium
-        const activePremiumUsers = premiumUsers.filter(u => !u.premium_expires_at || new Date(u.premium_expires_at) > new Date());
-
-        if (activePremiumUsers.length === 0) {
-            setLeaderboard([]);
-            setLoading(false);
-            return;
-        }
-
-        // Fetch all cards for premium users with tier info
-        const userIds = activePremiumUsers.map(u => u.id);
+        // Fetch all cards for users with tier info
+        const userIds = allUsers.map(u => u.id);
         const { data: allCards } = await supabase
             .from('user_cards')
             .select(`
@@ -64,7 +54,7 @@ export default function LeaderboardPage() {
             .in('user_id', userIds);
 
         // Calculate points per user
-        const entries = activePremiumUsers.map(u => {
+        const entries = allUsers.map(u => {
             const userCards = (allCards || [])
                 .filter(c => c.user_id === u.id)
                 .map(c => ({ ...c, tier: c.master_cards?.tier || 'entry' }));
@@ -76,7 +66,7 @@ export default function LeaderboardPage() {
             const totalCards = userCards.length;
 
             return { ...u, displayName, points, rank, activeCards, totalCards };
-        });
+        }).filter(e => e.totalCards > 0); // Only show users who have at least 1 card
 
         // Sort by points descending
         entries.sort((a, b) => b.points - a.points);
@@ -94,7 +84,7 @@ export default function LeaderboardPage() {
         setLoading(false);
     };
 
-    const isPremium = userProfile?.is_premium === true && (!userProfile?.premium_expires_at || new Date(userProfile.premium_expires_at) > new Date());
+
 
     if (loading) {
         return (
@@ -123,7 +113,7 @@ export default function LeaderboardPage() {
                 </div>
 
                 {/* Current user rank card */}
-                {isPremium && myRank && (
+                {myRank && (
                     <div className="glass-card" style={{
                         padding: '20px 24px', marginBottom: '24px',
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -141,27 +131,6 @@ export default function LeaderboardPage() {
                     </div>
                 )}
 
-                {/* Non-premium CTA */}
-                {user && !isPremium && (
-                    <div className="glass-card" style={{
-                        padding: '20px 24px', marginBottom: '24px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        flexWrap: 'wrap', gap: '12px',
-                        border: '1px solid var(--accent-purple)',
-                        background: 'rgba(168,85,247,0.06)',
-                    }}>
-                        <div>
-                            <strong>Want to rank on the leaderboard?</strong>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0' }}>
-                                Upgrade to Premium to get ranked and compete with other collectors.
-                            </p>
-                        </div>
-                        <button className="btn btn-primary btn-sm" style={{ background: 'var(--accent-purple)', whiteSpace: 'nowrap' }}>
-                            ⭐ Upgrade to Premium
-                        </button>
-                    </div>
-                )}
-
                 <AdBanner slot="leaderboard-top" />
 
                 {/* Leaderboard Table */}
@@ -169,7 +138,7 @@ export default function LeaderboardPage() {
                     <div className="empty-state">
                         <div className="empty-state-icon">🏆</div>
                         <h3>No ranked profiles yet</h3>
-                        <p>Be the first Premium member to claim the top spot!</p>
+                        <p>Be the first to add cards and claim the top spot!</p>
                     </div>
                 ) : (
                     <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>

@@ -8,7 +8,7 @@ const inrFormatter = new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
 });
 
-export default function DownloadSummary({ profileName, slug, cards, isPremium = false }) {
+export default function DownloadSummary({ profileName, slug, cards }) {
     const [generating, setGenerating] = useState(false);
 
     const stats = {
@@ -90,28 +90,7 @@ export default function DownloadSummary({ profileName, slug, cards, isPremium = 
             ctx.font = '22px sans-serif';
             ctx.fillText('No sensitive card details are stored on CardFolio.', 80, h - 80);
 
-            // Watermark for free users
-            if (!isPremium) {
-                // Semi-transparent diagonal watermark
-                ctx.save();
-                ctx.globalAlpha = 0.12;
-                ctx.translate(w / 2, h / 2);
-                ctx.rotate(-Math.PI / 6);
-                ctx.fillStyle = '#a855f7';
-                ctx.font = 'bold 72px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('cardfolio.app', 0, 0);
-                ctx.restore();
 
-                // Bottom-right badge
-                ctx.globalAlpha = 0.6;
-                ctx.fillStyle = '#a855f7';
-                ctx.font = 'bold 20px sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText('Powered by CardFolio · Upgrade to remove watermark', w - 40, h - 30);
-                ctx.textAlign = 'left';
-                ctx.globalAlpha = 1;
-            }
 
             // Download
             const link = document.createElement('a');
