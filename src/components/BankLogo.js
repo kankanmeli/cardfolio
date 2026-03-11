@@ -27,8 +27,8 @@ export default function BankLogo({ bankName, size = 24 }) {
         return <span style={{ fontSize: `${size > 20 ? size - 4 : size}px`, lineHeight: 1 }}>🏦</span>;
     }
 
-    // Using Clearbit Logo API
-    const logoUrl = `https://logo.clearbit.com/${domain}`;
+    // Using unavatar.io service for logos
+    const logoUrl = `https://unavatar.io/${domain}?fallback=false`;
 
     return (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
