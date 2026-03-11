@@ -27,8 +27,8 @@ export default function BankLogo({ bankName, size = 24 }) {
         return <span style={{ fontSize: `${size > 20 ? size - 4 : size}px`, lineHeight: 1 }}>🏦</span>;
     }
 
-    // Using unavatar.io service for logos
-    const logoUrl = `https://unavatar.io/${domain}?fallback=false`;
+    // Using Google Favicon API for stable, high-quality logos
+    const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
     return (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
