@@ -15,6 +15,8 @@ export default function AdminPage() {
     const [banks, setBanks] = useState([]);
     const [newBankName, setNewBankName] = useState('');
     const [savingBank, setSavingBank] = useState(false);
+    const [editingBankId, setEditingBankId] = useState(null);
+    const [editBankName, setEditBankName] = useState('');
 
     // Card management state
     const [masterCards, setMasterCards] = useState([]);
@@ -116,6 +118,18 @@ export default function AdminPage() {
         setConfirmAction(null);
     };
 
+    const handleUpdateBank = async (bankId, newName) => {
+        if (!newName.trim()) return;
+        const { error } = await supabase.from('banks').update({ name: newName.trim() }).eq('id', bankId);
+        if (error) {
+            showToast('Failed to rename bank: ' + error.message, 'error');
+        } else {
+            showToast('Bank renamed successfully');
+            await fetchBanks();
+        }
+        setEditingBankId(null);
+    };
+
     // ============================================
     // CARD MANAGEMENT
     // ============================================
@@ -124,10 +138,24 @@ export default function AdminPage() {
             .from('master_cards')
             .select('*, banks(name)')
             .order('card_name', { ascending: true });
+        
+        // Count how many users hold each card
+        const { data: usageData } = await supabase
+            .from('user_cards')
+            .select('master_card_id');
+            
+        const usageCounts = {};
+        if (usageData) {
+            usageData.forEach(c => {
+                usageCounts[c.master_card_id] = (usageCounts[c.master_card_id] || 0) + 1;
+            });
+        }
+
         if (data) {
             setMasterCards(data.map(c => ({
                 ...c,
                 bank_name: c.banks?.name || '',
+                holders_count: usageCounts[c.id] || 0
             })));
         }
     };
@@ -323,20 +351,22 @@ export default function AdminPage() {
     // USER MANAGEMENT
     // ============================================
     const fetchUsers = async () => {
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-        if (data) {
-            // Fetch card counts for each user
-            const { data: counts } = await supabase
-                .from('user_cards')
-                .select('user_id');
-            const countMap = {};
-            (counts || []).forEach(c => {
-                countMap[c.user_id] = (countMap[c.user_id] || 0) + 1;
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            
+            const res = await fetch('/api/admin/users', {
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`
+                }
             });
-            setUsers(data.map(u => ({ ...u, card_count: countMap[u.id] || 0 })));
+            
+            const result = await res.json();
+            if (res.ok && result.users) {
+                setUsers(result.users);
+            }
+        } catch (err) {
+            console.error('Failed to fetch users:', err);
         }
     };
 
@@ -602,6 +632,7 @@ export default function AdminPage() {
                                         <th>Image</th>
                                         <th>Bank</th>
                                         <th>Card Name</th>
+                                        <th>Holders</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -621,6 +652,18 @@ export default function AdminPage() {
                                             </td>
                                             <td style={{ fontWeight: 500 }}>{card.bank_name}</td>
                                             <td>{card.card_name}</td>
+                                            <td>
+                                                <span style={{ 
+                                                    backgroundColor: 'rgba(168, 85, 247, 0.1)', 
+                                                    color: 'var(--accent-purple)',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600
+                                                }}>
+                                                    {card.holders_count}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
                                                     <button
