@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { SkeletonCard } from '@/components/Skeleton';
+import BankLogo from '@/components/BankLogo';
 
 const inrFormatter = new Intl.NumberFormat('en-IN', {
     style: 'currency', currency: 'INR', maximumFractionDigits: 0,
@@ -178,7 +179,7 @@ export default function CatalogPage() {
                     sortedGroups.map(([bankName, bankCards]) => (
                         <section key={bankName} style={{ marginBottom: '32px' }}>
                             <h2 className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                🏦 {bankName}
+                                <BankLogo bankName={bankName} size={28} /> {bankName}
                                 <span className="section-heading-count">{bankCards.length}</span>
                             </h2>
                             <div className="cards-grid">

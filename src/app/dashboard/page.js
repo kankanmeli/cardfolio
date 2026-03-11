@@ -9,6 +9,7 @@ import CardForm from '@/components/CardForm';
 import ProfileSettings from '@/components/ProfileSettings';
 import DownloadSummary from '@/components/DownloadSummary';
 import RankBadge from '@/components/RankBadge';
+import BankLogo from '@/components/BankLogo';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import ExportPortfolio from '@/components/ExportPortfolio';
 import Confetti from '@/components/Confetti';
@@ -397,7 +398,7 @@ export default function DashboardPage() {
                     bankGroups.length > 0 ? bankGroups.map(([bankName, bankCards]) => (
                         <section key={bankName} style={{ marginBottom: '32px' }}>
                             <h2 className="section-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                🏦 {bankName}
+                                <BankLogo bankName={bankName} size={28} /> {bankName}
                                 <span className="section-heading-count">{bankCards.length}</span>
                             </h2>
                             <div className="cards-grid">
